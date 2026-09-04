@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { SiteFooter, SiteHeader } from "./site-chrome";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -15,14 +16,14 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Apivue — API Documentation Platform",
-  description: "Beautiful, interactive API documentation with live playground, code generation, and team collaboration.",
+  title: "APIVue — Developer analytics from real APIs",
+  description: "Turn developer-platform APIs into understandable, interactive analytics.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0ea5e9",
+  themeColor: "#c64b2c",
 };
 
 export default function RootLayout({
@@ -37,7 +38,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className="bg-surface-50 text-surface-900 dark:bg-surface-950 dark:text-surface-50 min-h-screen">
+        <SiteHeader />
         {children}
+        <SiteFooter />
       </body>
     </html>
   );
