@@ -1,0 +1,49 @@
+Before implementation, ONLY check the Git/GitHub state.
+
+Do NOT modify files.
+Do NOT install packages.
+Do NOT commit.
+Do NOT push.
+
+Check and report:
+
+1. Git remote URL
+2. GitHub owner/repository name
+3. Current branch
+4. Whether working tree is clean
+5. Whether you can read the GitHub repository
+6. Whether you can write to it
+7. Whether you can create commits
+8. Whether you can push
+9. Whether GitHub authentication is already configured
+10. Whether .gitignore exists and protects .env/secrets
+
+Then check the current Apivue project:
+
+11. What files were created/modified
+12. Installed Next.js version
+13. Whether node_modules exists
+14. Current build/runtime errors
+15. Whether middleware.ts is currently broken
+16. Whether the homepage currently works
+
+Do not fix anything.
+
+Return only:
+
+GITHUB:
+READ:
+WRITE:
+COMMIT:
+PUSH:
+REMOTE:
+BRANCH:
+
+PROJECT:
+NEXT VERSION:
+NODE_MODULES:
+WORKING TREE:
+
+ERRORS:
+
+READY: YES/NO
