@@ -1,4 +1,4 @@
-export { metricsFromProfile, snapshotFromProfile, snapshotFromAnalytics, analyzeProfile } from "./engine";
+export { metricsFromProfile, snapshotFromProfile, snapshotFromAnalytics, analyzeProfile, enrichAnalytics } from "./engine";
 export * from "./calculations";
 export * from "./collections";
 export * from "./time-series";
