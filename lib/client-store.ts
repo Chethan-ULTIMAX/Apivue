@@ -1,45 +1,14 @@
 import type { AnalyticsSnapshot, AnalyticsResult, Workspace, WorkspaceStore, SavedProfileRef, SavedComparisonRef } from "@/types";
-
 const KEY = "apivue:v1";
 const emptyStore = (): WorkspaceStore => ({ workspaces: [], profiles: [], comparisons: [], snapshots: [] });
-
-export function loadStore(): WorkspaceStore {
-  if (typeof window === "undefined") return emptyStore();
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(KEY) ?? "null") as WorkspaceStore | null;
-    if (!parsed || !Array.isArray(parsed.workspaces)) return emptyStore();
-    return { ...parsed, snapshots: Array.isArray(parsed.snapshots) ? parsed.snapshots : [] };
-  } catch { return emptyStore(); }
-}
-
+export function loadStore(): WorkspaceStore { if (typeof window === "undefined") return emptyStore(); try { const parsed = JSON.parse(window.localStorage.getItem(KEY) ?? "null") as WorkspaceStore | null; if (!parsed || !Array.isArray(parsed.workspaces)) return emptyStore(); return { ...parsed, snapshots: Array.isArray(parsed.snapshots) ? parsed.snapshots : [] }; } catch { return emptyStore(); } }
 export function saveStore(store: WorkspaceStore) { if (typeof window !== "undefined") window.localStorage.setItem(KEY, JSON.stringify(store)); }
-
-export function ensureDefaultWorkspace(store: WorkspaceStore, ownerId = "local-user"): WorkspaceStore {
-  if (store.workspaces.length) return store;
-  const now = new Date().toISOString();
-  const workspace: Workspace = { id: `ws_${crypto.randomUUID()}`, name: "Personal Workspace", ownerId, members: [{ userId: ownerId, role: "owner" }], savedProfileIds: [], comparisonIds: [], createdAt: now, updatedAt: now };
-  const next = { ...store, workspaces: [workspace], activeWorkspaceId: workspace.id }; saveStore(next); return next;
-}
-
-export function saveProfile(result: AnalyticsResult, snapshot: AnalyticsSnapshot): WorkspaceStore {
-  let store = ensureDefaultWorkspace(loadStore());
-  const profile: SavedProfileRef = { id: `profile_${crypto.randomUUID()}`, platformId: result.platformId, subjectId: result.subjectId, displayName: result.subjectId, savedAt: snapshot.capturedAt, snapshotId: snapshot.id };
-  store = { ...store, profiles: [profile, ...store.profiles.filter(p => !(p.platformId === profile.platformId && p.subjectId === profile.subjectId))], snapshots: [snapshot, ...store.snapshots.filter(s => s.id !== snapshot.id).filter(s => !(s.platformId === snapshot.platformId && s.subjectId === snapshot.subjectId && s.capturedAt.slice(0, 16) === snapshot.capturedAt.slice(0, 16)))].slice(0, 200) };
-  const workspace = store.workspaces.find(w => w.id === store.activeWorkspaceId) ?? store.workspaces[0];
-  if (workspace) store = { ...store, workspaces: store.workspaces.map(w => w.id === workspace.id ? { ...w, savedProfileIds: [profile.id, ...w.savedProfileIds.filter(id => id !== profile.id)], updatedAt: new Date().toISOString() } : w) };
-  saveStore(store); return store;
-}
-
-export function saveComparison(platformId: string, left: string, right: string): WorkspaceStore {
-  let store = ensureDefaultWorkspace(loadStore());
-  const comparison: SavedComparisonRef = { id: `comparison_${crypto.randomUUID()}`, platformId, leftSubjectId: left, rightSubjectId: right, leftDisplayName: left, rightDisplayName: right, savedAt: new Date().toISOString() };
-  store = { ...store, comparisons: [comparison, ...store.comparisons].slice(0, 100) };
-  const workspace = store.workspaces.find(w => w.id === store.activeWorkspaceId) ?? store.workspaces[0];
-  if (workspace) store = { ...store, workspaces: store.workspaces.map(w => w.id === workspace.id ? { ...w, comparisonIds: [comparison.id, ...w.comparisonIds], updatedAt: new Date().toISOString() } : w) };
-  saveStore(store); return store;
-}
-
+export function ensureDefaultWorkspace(store: WorkspaceStore, ownerId = "local-user"): WorkspaceStore { if (store.workspaces.length) return store; const now = new Date().toISOString(); const workspace: Workspace = { id: `ws_${crypto.randomUUID()}`, name: "Personal Workspace", ownerId, members: [{ userId: ownerId, role: "owner" }], savedProfileIds: [], comparisonIds: [], createdAt: now, updatedAt: now }; const next = { ...store, workspaces: [workspace], activeWorkspaceId: workspace.id }; saveStore(next); return next; }
+export function snapshotFromResult(result: AnalyticsResult, capturedAt = new Date().toISOString()): AnalyticsSnapshot { return { id: `${result.platformId}:${result.subjectId}:${capturedAt}`, platformId: result.platformId, subjectId: result.subjectId, capturedAt, metrics: Object.fromEntries(result.metrics.map(m => [m.id, m.value])), distributions: result.distributions, timeSeries: result.timeSeries, metadata: result.metadata }; }
+export function persistAnalytics(result: AnalyticsResult): WorkspaceStore { return saveProfile(result, snapshotFromResult(result)); }
+export function saveProfile(result: AnalyticsResult, snapshot: AnalyticsSnapshot): WorkspaceStore { let store = ensureDefaultWorkspace(loadStore()); const profile: SavedProfileRef = { id: `profile_${crypto.randomUUID()}`, platformId: result.platformId, subjectId: result.subjectId, displayName: result.subjectId, savedAt: snapshot.capturedAt, snapshotId: snapshot.id }; store = { ...store, profiles: [profile, ...store.profiles.filter(p => !(p.platformId === profile.platformId && p.subjectId === profile.subjectId))], snapshots: [snapshot, ...store.snapshots.filter(s => !(s.platformId === snapshot.platformId && s.subjectId === snapshot.subjectId && s.capturedAt.slice(0, 16) === snapshot.capturedAt.slice(0, 16)))].slice(0, 200) }; const workspace = store.workspaces.find(w => w.id === store.activeWorkspaceId) ?? store.workspaces[0]; if (workspace) store = { ...store, workspaces: store.workspaces.map(w => w.id === workspace.id ? { ...w, savedProfileIds: [profile.id, ...w.savedProfileIds.filter(id => id !== profile.id)], updatedAt: new Date().toISOString() } : w) }; saveStore(store); return store; }
+export function saveComparison(platformId: string, left: string, right: string): WorkspaceStore { let store = ensureDefaultWorkspace(loadStore()); const comparison: SavedComparisonRef = { id: `comparison_${crypto.randomUUID()}`, platformId, leftSubjectId: left, rightSubjectId: right, leftDisplayName: left, rightDisplayName: right, savedAt: new Date().toISOString() }; store = { ...store, comparisons: [comparison, ...store.comparisons].slice(0, 100) }; const workspace = store.workspaces.find(w => w.id === store.activeWorkspaceId) ?? store.workspaces[0]; if (workspace) store = { ...store, workspaces: store.workspaces.map(w => w.id === workspace.id ? { ...w, comparisonIds: [comparison.id, ...w.comparisonIds], updatedAt: new Date().toISOString() } : w) }; saveStore(store); return store; }
 export function createWorkspace(name: string, ownerId = "local-user"): WorkspaceStore { const store = ensureDefaultWorkspace(loadStore(), ownerId); const now = new Date().toISOString(); const workspace: Workspace = { id: `ws_${crypto.randomUUID()}`, name: name.trim() || "Untitled Workspace", ownerId, members: [{ userId: ownerId, role: "owner" }], savedProfileIds: [], comparisonIds: [], createdAt: now, updatedAt: now }; const next = { ...store, workspaces: [...store.workspaces, workspace], activeWorkspaceId: workspace.id }; saveStore(next); return next; }
 export function selectWorkspace(id: string): WorkspaceStore { const store = loadStore(); const next = { ...store, activeWorkspaceId: id }; saveStore(next); return next; }
-export function removeProfile(id: string): WorkspaceStore { const store = loadStore(); const next = { ...store, profiles: store.profiles.filter(p => p.id !== id), workspaces: store.workspaces.map(w => ({ ...w, savedProfileIds: w.savedProfileIds.filter(x => x !== id) })) }; saveStore(next); return next; }
+export function removeProfile(id: string): WorkspaceStore { const store = loadStore(); const profile = store.profiles.find(p => p.id === id); const next = { ...store, profiles: store.profiles.filter(p => p.id !== id), snapshots: profile ? store.snapshots.filter(s => !(s.platformId === profile.platformId && s.subjectId === profile.subjectId)) : store.snapshots, workspaces: store.workspaces.map(w => ({ ...w, savedProfileIds: w.savedProfileIds.filter(x => x !== id) })) }; saveStore(next); return next; }
 export function removeComparison(id: string): WorkspaceStore { const store = loadStore(); const next = { ...store, comparisons: store.comparisons.filter(c => c.id !== id), workspaces: store.workspaces.map(w => ({ ...w, comparisonIds: w.comparisonIds.filter(x => x !== id) })) }; saveStore(next); return next; }
