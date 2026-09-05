@@ -1,2 +1,5 @@
-import Link from "next/link";
-export default function ProfilesPage() { return <main className="page-shell"><p className="eyebrow">Profiles / public sources</p><h1>Profiles become useful when the source is clear.</h1><p className="lede">Fetch a public GitHub or Codeforces profile on demand. APIVue does not retain the fetched profile, cookies, or credentials.</p><section className="platform-grid"><Link className="platform-tile" href="/platforms/github"><span className="tile-kicker">public API</span><h2>GitHub profile</h2><p>Repositories, followers, stars, languages, and recent public activity.</p><span className="tile-link">Analyze GitHub →</span></Link><Link className="platform-tile" href="/platforms/codeforces"><span className="tile-kicker">public API</span><h2>Codeforces profile</h2><p>Ratings, contest history, solved tags, and difficulty distribution.</p><span className="tile-link">Analyze Codeforces →</span></Link></section><p className="notice">Historical snapshots are an in-memory model only in Phase 2. Persistent history requires an authenticated account and explicit consent.</p></main>; }
+import { ProfileWorkbench } from "@/components/app/profile-workbench";
+
+export default function ProfilesPage() {
+  return <main className="page-shell"><p className="eyebrow">Profiles / live analysis</p><h1>Fetch a profile. Turn it into a reusable snapshot.</h1><p className="lede">Analyze supported public profiles, inspect normalized metrics, and explicitly save snapshots to this browser's APIVue workspace.</p><ProfileWorkbench /></main>;
+}
