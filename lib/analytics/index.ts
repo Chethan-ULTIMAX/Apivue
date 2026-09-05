@@ -4,3 +4,4 @@ export * from "./collections";
 export * from "./time-series";
 export * from "./compare";
 export * from "./insights";
+export * from "./normalize";
