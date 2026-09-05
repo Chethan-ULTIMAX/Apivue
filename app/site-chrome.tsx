@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Command } from "lucide-react";
 import { appNavigation, publicNavigation } from "@/config/navigation";
 import { CommandPalette } from "@/components/search/command-palette";
 
@@ -19,8 +19,8 @@ export function SiteHeader() {
           <Link href={item.href} key={item.href}>{item.label}</Link>
         ))}
       </nav>
-      <Link className="header-action" href="/explore">
-        Explore data <ArrowRight size={16} />
+      <Link className="header-action" href="/playground">
+        <Command size={15} /> API Explorer <ArrowRight size={16} />
       </Link>
       <CommandPalette />
     </header>
@@ -30,8 +30,8 @@ export function SiteHeader() {
 export function SiteFooter() {
   return (
     <footer className="site-footer">
-      <span>APIVue / foundation phase</span>
-      <span>Built for transparent developer analytics.</span>
+      <span>APIVue / developer intelligence</span>
+      <span>Real sources. Visible requests. Useful analysis.</span>
     </footer>
   );
 }
