@@ -1,3 +1,2 @@
-export default function PlaygroundPage() {
-	return <main className="page-shell"><p className="eyebrow">API Playground</p><h1>Inspect a request before it becomes a chart.</h1><p className="lede">The request inspector and code examples will appear here once a platform integration is connected.</p></main>;
-}
+import { Playground } from "@/components/api-explorer/playground";
+export default function PlaygroundPage() { return <main className="page-shell"><p className="eyebrow">API Playground / public sources</p><h1>Inspect the request, then inspect the response.</h1><p className="lede">Every request is proxied through a strict public allowlist with timing and source transparency.</p><Playground /></main>; }

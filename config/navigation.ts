@@ -15,6 +15,8 @@ export const appNavigation: NavigationItem[] = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Profiles", href: "/profiles" },
   { label: "Playground", href: "/playground" },
+  { label: "Compare", href: "/compare" },
+  { label: "History", href: "/history" },
   { label: "Workspaces", href: "/workspaces" },
 ];
 

@@ -1,5 +1,20 @@
 # APIVue
 
+APIVue is a transparent developer-platform catalog and public API inspection tool. Phase 2 adds a 150-platform registry, status-aware discovery, a server-side allowlisted public API explorer, JSON response inspection, and safe cURL/fetch/requests code examples.
+
+## Architecture
+
+- `config/platforms/`: category-separated registry definitions (150 entries)
+- `app/api/public/[platform]`: strict server-side allowlist for public lookups; no arbitrary proxying
+- `components/api-explorer` and `components/json-viewer`: request and response UI
+- `lib/requests`: secret-safe code generation; `lib/comparisons`: common metric calculation
+
+Implemented public explorer adapters: GitHub, GitLab, Codeforces, npm, PyPI, Docker Hub, Hugging Face, Stack Exchange/Stack Overflow, and NVD. Other entries are labelled public API, authenticated, planned, or catalog-only based on the safe UI capability currently enabled. Authentication-required integrations intentionally have no browser credential flow.
+
+## Adding a platform
+
+Add its definition to the appropriate `config/platforms` category file, set its truthful integration status, create a narrowly scoped server adapter under `lib/integrations`/API route, normalize only documented public fields, then expose it through the playground and add tests. Do not add keys, tokens, cookies, or authorization headers to client code or examples.
+
 APIVue turns developer-platform APIs into understandable, interactive analytics. It is designed around the flow `Connect -> Fetch -> Understand -> Visualize -> Compare -> Learn`.
 
 ## Development

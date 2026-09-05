@@ -549,11 +549,6 @@ export const codingPlatforms: PlatformDefinition[] = [
     notes: "Coding Ninjas does not provide a public API for user statistics."
   },
   {
-    id: "Sphere+Online+Judge", // Note: We cannot use '+' in the id, we'll use 'sphere-online-judge'
-    // Actually, let's change the id to 'sphere-online-judge'
-    // We'll fix this in the next line.
-  },
-  {
     id: "sphere-online-judge",
     name: "Sphere Online Judge",
     description: "See SPOJ above. (Duplicate entry? We'll keep it as per the list but note it's the same as SPOJ.)",

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { appNavigation, publicNavigation } from "@/config/navigation";
+import { CommandPalette } from "@/components/search/command-palette";
 
 export function SiteHeader() {
   return (
@@ -21,6 +22,7 @@ export function SiteHeader() {
       <Link className="header-action" href="/explore">
         Explore data <ArrowRight size={16} />
       </Link>
+      <CommandPalette />
     </header>
   );
 }
