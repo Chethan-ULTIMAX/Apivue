@@ -1,37 +1,66 @@
 import type { PlatformDefinition } from "@/types";
-import { codingPlatforms } from "./coding";
-import { cloudPlatforms } from "./cloud";
-import { gitPlatforms } from "./git";
-import { aiPlatforms } from "./ai";
-import { securityPlatforms } from "./security";
-import { educationPlatforms } from "./education";
-import { communityPlatforms } from "./community";
-import { productivityPlatforms } from "./productivity";
-import { otherPlatforms } from "./other";
-import { packagePlatforms } from "./packages";
+export { platformHealth, statusCounts } from "./health";
+export type { PlatformHealthRow } from "./health";
+import { sourceControlPlatforms } from "./source-control/index";
+import { codingPlatforms } from "./coding/index";
+import { packagesPlatforms } from "./packages/index";
+import { cloudInfrastructurePlatforms } from "./cloud-infrastructure/index";
+import { aiMlPlatforms } from "./ai-ml/index";
+import { securityPlatforms } from "./security/index";
+import { developerCommunityPlatforms } from "./developer-community/index";
+import { educationPlatforms } from "./education/index";
+import { productivityDocumentationPlatforms } from "./productivity-documentation/index";
+import { apiEcosystemPlatforms } from "./api-ecosystem/index";
 
 const registry: PlatformDefinition[] = [
-  ...gitPlatforms,
+  ...sourceControlPlatforms,
   ...codingPlatforms,
-  ...communityPlatforms,
-  ...educationPlatforms,
-  ...productivityPlatforms,
-  ...cloudPlatforms,
-  ...aiPlatforms,
+  ...packagesPlatforms,
+  ...cloudInfrastructurePlatforms,
+  ...aiMlPlatforms,
   ...securityPlatforms,
-  ...otherPlatforms,
-  ...packagePlatforms,
+  ...developerCommunityPlatforms,
+  ...educationPlatforms,
+  ...productivityDocumentationPlatforms,
+  ...apiEcosystemPlatforms,
 ];
-const implemented = new Set(["github", "gitlab", "codeforces", "npm", "pypi", "docker-hub", "huggingface", "stack-exchange", "stack-overflow", "nvd"]);
-const corrected = new Map<string, Partial<PlatformDefinition>>([
-  ["leetcode", { integrationStatus: "planned", requestExampleSupport: false, notes: "No official public profile API is used. APIVue does not scrape undocumented endpoints." }],
-  ["replit", { integrationStatus: "catalog-only", analyticsSupport: false, profileSupport: false, comparisonSupport: false, activitySupport: false, requestExampleSupport: false }],
-  ["atcoder", { integrationStatus: "catalog-only", notes: "No supported official public profile API is enabled." }],
-  ["kattis", { integrationStatus: "catalog-only", notes: "No supported official public profile API is enabled." }],
-  ["codewars", { integrationStatus: "catalog-only", notes: "No supported official API integration is enabled." }],
-]);
-export const platforms = registry.map(platform => ({ ...platform, integrationStatus: platform.integrationStatus ?? "catalog-only" as const, ...(implemented.has(platform.id) ? { integrationStatus: "public-api" as const, publicAccess: true, profileSupport: true, analyticsSupport: true, comparisonSupport: ["github", "codeforces"].includes(platform.id), activitySupport: ["github", "codeforces"].includes(platform.id), requestExampleSupport: true } : {}), ...corrected.get(platform.id) }));
+const enrich = (platform: PlatformDefinition): PlatformDefinition => {
+  return {
+    ...platform,
+    integrationStatus: platform.integrationStatus ?? "catalog-only",
+    apiAvailability: platform.apiAvailability ?? "unknown",
+    authenticationRequired: platform.authentication.some(authentication => authentication !== "public"),
+    publicAccess: platform.publicAccess ?? !platform.authentication.some(authentication => authentication !== "public"),
+    profileSupport: platform.profileSupport ?? false,
+    analyticsSupport: platform.analyticsSupport ?? false,
+    comparisonSupport: platform.comparisonSupport ?? false,
+    activitySupport: platform.activitySupport ?? false,
+    requestExampleSupport: platform.requestExampleSupport ?? false,
+    supportedOperations: platform.supportedOperations ?? [],
+    endpoints: platform.endpoints ?? [],
+    requestExamples: platform.requestExamples ?? [],
+    extractableData: platform.extractableData ?? platform.capabilities.map(capability => capability.label),
+    availableAnalytics: platform.availableAnalytics ?? [],
+    comparableMetrics: platform.comparableMetrics ?? [],
+    historySupported: platform.historySupported ?? platform.supportsHistoricalSnapshots,
+    limitations: platform.limitations ?? [platform.notes ?? "Capabilities require a verified platform adapter."],
+  };
+};
+
+export const platforms = registry.map(enrich);
 
 export function getPlatform(platformId: string) {
   return platforms.find((platform) => platform.id === platformId);
+}
+
+export function getAllPlatforms(): PlatformDefinition[] { return platforms; }
+export function getPlatformsByCategory(category: string): PlatformDefinition[] { const normalize = (value: string) => value.toLowerCase().replace(/[\s_/-]+/g, ""); return platforms.filter(platform => normalize(platform.category) === normalize(category)); }
+export function getPlatformsByCapability(capability: string): PlatformDefinition[] { return platforms.filter(platform => platform.capabilities.some(item => item.id === capability || item.label.toLowerCase() === capability.toLowerCase())); }
+export function getPlatformsByIntegrationStatus(status: NonNullable<PlatformDefinition["integrationStatus"]>): PlatformDefinition[] { return platforms.filter(platform => platform.integrationStatus === status); }
+export function searchPlatforms(query: string): PlatformDefinition[] { const normalized = query.trim().toLowerCase(); if (!normalized) return platforms; return platforms.filter(platform => [platform.id, platform.name, platform.description, platform.category].some(value => value.toLowerCase().includes(normalized))); }
+
+export interface PlatformCompletenessReport { total: number; duplicateIds: string[]; missingCategories: string[]; missingWebsites: string[]; missingStatuses: string[]; missingCapabilities: string[]; missingAuthentication: string[]; }
+export function getPlatformCompletenessReport(): PlatformCompletenessReport {
+  const ids = platforms.map(platform => platform.id);
+  return { total: platforms.length, duplicateIds: ids.filter((id, index) => ids.indexOf(id) !== index), missingCategories: platforms.filter(platform => !platform.category).map(platform => platform.id), missingWebsites: platforms.filter(platform => !platform.websiteUrl).map(platform => platform.id), missingStatuses: platforms.filter(platform => !platform.integrationStatus).map(platform => platform.id), missingCapabilities: platforms.filter(platform => !platform.capabilities.length).map(platform => platform.id), missingAuthentication: platforms.filter(platform => !platform.authentication.length).map(platform => platform.id) };
 }

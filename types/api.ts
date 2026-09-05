@@ -2,9 +2,27 @@ import type { PlatformId } from "./platform";
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 export type RequestVisibility = "public" | "authenticated";
+export type ApiErrorCode = "invalid-parameters" | "unsupported-operation" | "timeout" | "network" | "http" | "invalid-response";
+
+export interface RateLimitInfo {
+  limit?: number;
+  remaining?: number;
+  resetAt?: string;
+  retryAfterSeconds?: number;
+}
+
+export interface ApiRequestMetadata {
+  source: string;
+  documentationUrl?: string;
+  startedAt: string;
+  durationMs: number;
+  responseSize?: number;
+  rateLimit?: RateLimitInfo;
+}
 
 export interface ApiRequest<TParams = Record<string, unknown>> {
   platformId: PlatformId;
+  operationId?: string;
   endpointId: string;
   method: HttpMethod;
   url: string;
@@ -37,5 +55,22 @@ export interface RequestExample {
 export interface IntegrationResult<TRaw = unknown> {
   request: ApiRequest;
   response?: ApiResponse<TRaw>;
-  error?: { code: string; message: string };
+  metadata?: ApiRequestMetadata;
+  error?: { code: ApiErrorCode; message: string; status?: number; retryAfterSeconds?: number };
 }
+
+export interface ApiSuccess<TRaw = unknown> {
+  ok: true;
+  status: number;
+  data: TRaw;
+  metadata: ApiRequestMetadata;
+}
+
+export interface ApiFailure {
+  ok: false;
+  status?: number;
+  error: { code: ApiErrorCode; message: string };
+  metadata: ApiRequestMetadata;
+}
+
+export type ApiResult<TRaw = unknown> = ApiSuccess<TRaw> | ApiFailure;

@@ -1,0 +1,27 @@
+import { leetcode } from "./leetcode";
+import { codeforces } from "./codeforces";
+import { hackerrank } from "./hackerrank";
+import { codechef } from "./codechef";
+import { atcoder } from "./atcoder";
+import { topcoder } from "./topcoder";
+import { geeksforgeeks } from "./geeksforgeeks";
+import { hackerearth } from "./hackerearth";
+import { codingame } from "./codingame";
+import { exercism } from "./exercism";
+import { kattis } from "./kattis";
+import { spoj } from "./spoj";
+import { projecteuler } from "./projecteuler";
+import { cses } from "./cses";
+import { codewars } from "./codewars";
+import { dmoj } from "./dmoj";
+import { beecrowd } from "./beecrowd";
+import { lightoj } from "./lightoj";
+import { vjudge } from "./vjudge";
+import { timus } from "./timus";
+import { algoexpert } from "./algoexpert";
+import { interviewbit } from "./interviewbit";
+import { codingninjas } from "./codingninjas";
+import { sphereOnlineJudge } from "./sphere-online-judge";
+import { replit } from "./replit";
+
+export const codingPlatforms = [leetcode, codeforces, hackerrank, codechef, atcoder, topcoder, geeksforgeeks, hackerearth, codingame, exercism, kattis, spoj, projecteuler, cses, codewars, dmoj, beecrowd, lightoj, vjudge, timus, algoexpert, interviewbit, codingninjas, sphereOnlineJudge, replit];

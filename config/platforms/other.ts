@@ -1,2 +1,0 @@
-import { definePlatforms } from "./factory";
-export const otherPlatforms = definePlatforms("API Ecosystem", [["rapidapi","RapidAPI","https://rapidapi.com","authenticated"],["public-apis","Public APIs","https://publicapis.dev","catalog-only"],["apis-guru","APIs.guru","https://apis.guru","public-api"],["openapi-initiative","OpenAPI Initiative","https://openapis.org","catalog-only"],["insomnia","Insomnia","https://insomnia.rest","catalog-only"]]);

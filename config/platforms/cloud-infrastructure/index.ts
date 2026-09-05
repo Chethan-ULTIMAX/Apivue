@@ -1,0 +1,22 @@
+import { aws } from "./aws";
+import { azure } from "./azure";
+import { googleCloud } from "./google-cloud";
+import { cloudflare } from "./cloudflare";
+import { vercel } from "./vercel";
+import { netlify } from "./netlify";
+import { render } from "./render";
+import { railway } from "./railway";
+import { fly } from "./fly";
+import { digitalocean } from "./digitalocean";
+import { heroku } from "./heroku";
+import { oracleCloud } from "./oracle-cloud";
+import { ibmCloud } from "./ibm-cloud";
+import { firebase } from "./firebase";
+import { supabase } from "./supabase";
+import { docker } from "./docker";
+import { kubernetes } from "./kubernetes";
+import { hashicorp } from "./hashicorp";
+import { pulumi } from "./pulumi";
+import { jenkins } from "./jenkins";
+
+export const cloudInfrastructurePlatforms = [aws, azure, googleCloud, cloudflare, vercel, netlify, render, railway, fly, digitalocean, heroku, oracleCloud, ibmCloud, firebase, supabase, docker, kubernetes, hashicorp, pulumi, jenkins];

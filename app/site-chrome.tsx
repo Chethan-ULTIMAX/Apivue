@@ -2,8 +2,11 @@ import Link from "next/link";
 import { ArrowRight, Command } from "lucide-react";
 import { appNavigation, publicNavigation } from "@/config/navigation";
 import { CommandPalette } from "@/components/search/command-palette";
+import { LogoutButton } from "@/components/auth/auth-actions";
+import { getCurrentSession } from "@/lib/auth/session";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const session = await getCurrentSession();
   return (
     <header className="site-header">
       <Link className="brand" href="/">
@@ -22,6 +25,7 @@ export function SiteHeader() {
       <Link className="header-action" href="/playground">
         <Command size={15} /> API Explorer <ArrowRight size={16} />
       </Link>
+      {session.status === "authenticated" ? <div className="header-account"><Link href="/account">{session.user?.displayName ?? "Account"}</Link><LogoutButton /></div> : <Link className="header-sign-in" href="/login">Sign in</Link>}
       <CommandPalette />
     </header>
   );

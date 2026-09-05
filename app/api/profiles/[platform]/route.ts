@@ -1,9 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
-import { normalizeGitHub } from "@/lib/integrations/github/normalizer";
-import { normalizeCodeforces } from "@/lib/integrations/codeforces/normalizer";
-const json = async (url: string) => { const response = await fetch(url,{headers:{Accept:"application/json","User-Agent":"APIVue/0.2 public analytics"},next:{revalidate:60}}); const text=await response.text(); let data: any; try { data=JSON.parse(text); } catch { data={message:"The source returned an invalid response."}; } if(!response.ok) { const reset=response.headers.get("x-ratelimit-reset"); const retry=response.headers.get("retry-after") || (reset ? String(Math.max(0, Number(reset)-Math.floor(Date.now()/1000))) : null); throw Object.assign(new Error(data.message || "The source returned an error."),{status:response.status,rate:retry}); } return data; };
-export async function GET(request: NextRequest,{params}:{params:{platform:string}}) { const username=request.nextUrl.searchParams.get("username")?.trim(); if(!username || username.length>80) return NextResponse.json({error:"Enter a valid public username."},{status:400}); const start=Date.now(); try {
-  if(params.platform === "github") { const root="https://api.github.com/users/"+encodeURIComponent(username); const [user,repositories,events]=await Promise.all([json(root),json(root+"/repos?per_page=100&sort=updated"),json(root+"/events/public?per_page=100")]); const profile=normalizeGitHub(user,repositories,events); return NextResponse.json({profile,raw:{user,repositories,events},analytics:{languages:Object.entries(repositories.reduce((m:any,r:any)=>{if(r.language)m[r.language]=(m[r.language]||0)+1;return m;},{})),topRepositories:[...repositories].sort((a:any,b:any)=>b.stargazers_count-a.stargazers_count).slice(0,8),activity:events.map((event:any)=>({type:event.type,createdAt:event.created_at,repo:event.repo?.name}))},source:"GitHub REST API",documentation:"https://docs.github.com/en/rest",limitations:"Repository-derived aggregates are calculated from the latest 100 public repositories returned by this request.",fetchedAt:new Date().toISOString(),durationMs:Date.now()-start}); }
-  if(params.platform === "codeforces") { const base="https://codeforces.com/api/"; const [info,rating,submissions]=await Promise.all([json(base+"user.info?handles="+encodeURIComponent(username)),json(base+"user.rating?handle="+encodeURIComponent(username)),json(base+"user.status?handle="+encodeURIComponent(username)+"&from=1&count=1000")]); if(info.status!=="OK"||rating.status!=="OK"||submissions.status!=="OK") throw Object.assign(new Error(info.comment || rating.comment || submissions.comment || "Codeforces rejected the request."),{status:404}); const user=info.result[0]; const profile=normalizeCodeforces(user,rating.result,submissions.result); const tags:any={}; const difficulties:any={}; submissions.result.filter((s:any)=>s.verdict==="OK").forEach((s:any)=>{(s.problem.tags||[]).forEach((tag:string)=>tags[tag]=(tags[tag]||0)+1); const key=s.problem.rating ? String(s.problem.rating) : "Unrated"; difficulties[key]=(difficulties[key]||0)+1;}); return NextResponse.json({profile,raw:{user,rating:rating.result,submissions:submissions.result},analytics:{tags:Object.entries(tags).sort((a:any,b:any)=>b[1]-a[1]).slice(0,12),difficulties:Object.entries(difficulties).sort((a:any,b:any)=>a[0]==="Unrated"?1:b[0]==="Unrated"?-1:Number(a[0])-Number(b[0])),recentSubmissions:submissions.result.slice(0,20)},source:"Codeforces API",documentation:"https://codeforces.com/apiHelp",limitations:"Solved-problem and distribution metrics use the latest 1,000 public submissions returned by Codeforces.",fetchedAt:new Date().toISOString(),durationMs:Date.now()-start}); }
-  return NextResponse.json({error:"A dedicated public profile integration is not enabled for this platform."},{status:501});
- } catch(error:any) { const status=error.status || 503; return NextResponse.json({error:status===429?"This source is rate limited. Try again when its retry window has elapsed.":error.message || "The source could not be reached right now.",rateLimited:status===429,retryAfter:error.rate},{status}); } }
+import { getIntegration } from "@/lib/integrations";
+import { requestJson } from "@/lib/api/request";
+import { normalizeCodeforces, type CodeforcesRating, type CodeforcesSubmission, type CodeforcesUser } from "@/lib/integrations/codeforces/normalizer";
+import { normalizeGitHub, type GitHubEvent, type GitHubRepository, type GitHubUser } from "@/lib/integrations/github/normalizer";
+import { analyzeProfile } from "@/lib/analytics";
+
+type RecordValue = Record<string, unknown>;
+const isRecord = (value: unknown): value is RecordValue => typeof value === "object" && value !== null;
+const isArray = (value: unknown): value is unknown[] => Array.isArray(value);
+
+function failureResponse(result: Awaited<ReturnType<typeof requestJson>>, start: number) {
+  if (result.ok) return undefined;
+  return NextResponse.json({ error: result.error.message, code: result.error.code, metadata: result.metadata }, { status: result.status ?? 503, headers: { "x-apivue-duration-ms": String(Date.now() - start) } });
+}
+
+export async function GET(request: NextRequest, { params }: { params: { platform: string } }) {
+  const username = request.nextUrl.searchParams.get("username")?.trim() ?? "";
+  if (!username || username.length > 80) return NextResponse.json({ error: "Enter a valid public username." }, { status: 400 });
+  const integration = getIntegration(params.platform);
+  if (!integration?.buildProfileRequests) return NextResponse.json({ error: "A dedicated public profile integration is not enabled for this platform." }, { status: 501 });
+
+  const started = Date.now();
+  const requests = integration.buildProfileRequests(username);
+  const results = await Promise.all(requests.map(profileRequest => requestJson({ url: profileRequest.url, source: params.platform, documentationUrl: integration.documentationUrl })));
+  const failed = results.find(result => !result.ok);
+  if (failed) return failureResponse(failed, started);
+  const data = results.map(result => result.ok ? result.data : undefined);
+
+  try {
+    if (params.platform === "github") {
+      const [user, repositories, events] = data;
+      if (!isRecord(user) || !isArray(repositories) || !isArray(events) || typeof user.login !== "string") throw new Error("The GitHub response did not match the expected public profile shape.");
+      const profile = normalizeGitHub(user as GitHubUser, repositories as GitHubRepository[], events as GitHubEvent[]);
+      const fetchedAt = new Date().toISOString();
+      return NextResponse.json({ profile, raw: { user, repositories, events }, analytics: analyzeProfile(profile, fetchedAt), source: "GitHub REST API", documentation: integration.documentationUrl, limitations: "Repository-derived aggregates use the latest 100 public repositories returned by GitHub.", fetchedAt, durationMs: Date.now() - started });
+    }
+    if (params.platform === "codeforces") {
+      const [info, rating, submissions] = data;
+      if (!isRecord(info) || !isRecord(rating) || !isRecord(submissions) || !isArray(info.result) || !isArray(rating.result) || !isArray(submissions.result) || !isRecord(info.result[0])) throw new Error("The Codeforces response did not match the expected public profile shape.");
+      const profile = normalizeCodeforces(info.result[0] as CodeforcesUser, rating.result as CodeforcesRating[], submissions.result as CodeforcesSubmission[]);
+      const fetchedAt = new Date().toISOString();
+      return NextResponse.json({ profile, raw: { user: info.result[0], rating: rating.result, submissions: submissions.result }, analytics: analyzeProfile(profile, fetchedAt), source: "Codeforces API", documentation: integration.documentationUrl, limitations: "Submission-derived metrics use the latest 1,000 public submissions returned by Codeforces.", fetchedAt, durationMs: Date.now() - started });
+    }
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "The source returned an invalid response.", code: "invalid-response" }, { status: 502 });
+  }
+  return NextResponse.json({ error: "A dedicated public profile integration is not enabled for this platform." }, { status: 501 });
+}

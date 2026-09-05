@@ -1,4 +1,4 @@
-export type WorkspaceRole = "owner" | "editor" | "viewer";
+export type WorkspaceRole = "owner" | "admin" | "member";
 
 export interface WorkspaceMember {
   userId: string;
@@ -12,4 +12,6 @@ export interface Workspace {
   members: WorkspaceMember[];
   savedProfileIds: string[];
   comparisonIds: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
